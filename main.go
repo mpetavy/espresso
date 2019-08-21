@@ -261,7 +261,7 @@ func runSelfextract(filename string) error {
 }
 
 // runResource operates on the a single resource object and cares about download, runUnzip or extraction
-func runResource(wg *sync.WaitGroup, url string, path string, doUnzip bool, doExtract bool, channelError *common.ChannelError) {
+func runResource(wg *sync.WaitGroup, url string, path string, doUnzip bool, doExtract bool, channelError *ChannelError) {
 	defer wg.Done()
 
 	// first do the download ...
@@ -293,7 +293,7 @@ func runResource(wg *sync.WaitGroup, url string, path string, doUnzip bool, doEx
 	}
 }
 
-func runJnlp(address string, doHeader bool, channelError *common.ChannelError) *Jnlp {
+func runJnlp(address string, doHeader bool, channelError *ChannelError) *Jnlp {
 	// try to get the JNLP file
 	client := &http.Client{}
 
@@ -539,7 +539,7 @@ func run() error {
 		}
 	}
 
-	var channelError common.ChannelError
+	var channelError ChannelError
 
 	jnlp := runJnlp(*address, true, &channelError)
 
@@ -596,9 +596,42 @@ func run() error {
 	return err
 }
 
+type ChannelError struct {
+	m sync.Mutex
+	l []error
+}
+
+func (c *ChannelError) Add(err error) {
+	c.m.Lock()
+	c.l = append(c.l, err)
+	c.m.Unlock()
+}
+
+func (c *ChannelError) Get() error {
+	c.m.Lock()
+	defer c.m.Unlock()
+
+	if len(c.l) > 0 {
+		return c.l[0]
+	} else {
+		return nil
+	}
+}
+
+func (c *ChannelError) GetAll() []error {
+	return c.l
+}
+
+func (c *ChannelError) Exists() bool {
+	c.m.Lock()
+	defer c.m.Unlock()
+
+	return len(c.l) > 0
+}
+
 func main() {
 	defer common.Cleanup()
 
-	common.New(&common.App{"espresso", "1.0.6", "2017", "JNLP app launcher as an alternative to Java Webstart", "mpetavy", common.APACHE, "https://github.comn/mpetavy/golang/espresso", false, nil,nil, nil, run, time.Duration(0)}, []string{"url"})
+	common.New(&common.App{"espresso", "1.0.6", "2017", "JNLP app launcher as an alternative to Java Webstart", "mpetavy", common.APACHE, "https://github.comn/mpetavy/golang/espresso", false, nil, nil, nil, run, time.Duration(0)}, []string{"url"})
 	common.Run()
 }
