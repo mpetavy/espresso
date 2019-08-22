@@ -632,6 +632,6 @@ func (c *ChannelError) Exists() bool {
 func main() {
 	defer common.Cleanup()
 
-	common.New(&common.App{"espresso", "1.0.6", "2017", "JNLP app launcher as an alternative to Java Webstart", "mpetavy", common.APACHE, "https://github.comn/mpetavy/golang/espresso", false, nil, nil, nil, run, time.Duration(0)}, []string{"url"})
+	common.New(&common.App{"espresso", "1.0.6", "2017", "JNLP app launcher as an alternative to Java Webstart", "mpetavy", common.APACHE, "https://github.comn/mpetavy/golang/espresso", false, nil, nil, run, time.Duration(0)}, []string{"url"})
 	common.Run()
 }
