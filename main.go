@@ -6,6 +6,7 @@ import (
 	"encoding/xml"
 	"flag"
 	"fmt"
+	"github.com/mpetavy/common"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -16,9 +17,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
-
-	"github.com/mpetavy/common"
 )
 
 // Jnlp element
@@ -142,6 +140,8 @@ var (
 )
 
 func init() {
+	common.Init("espresso", "1.0.6", "2017", "JNLP app launcher as an alternative to Java Webstart", "mpetavy", common.APACHE, "https://github.comn/mpetavy/golang/espresso", false, nil, nil, run, 0)
+
 	address = flag.String("url", "", "URL to JNLP file")
 	jrepath = flag.String("jre", "", "Path to the java executable file")
 	arch = flag.String("arch", runtime.GOARCH, "Used architecture")
@@ -632,6 +632,5 @@ func (c *ChannelError) Exists() bool {
 func main() {
 	defer common.Cleanup()
 
-	common.New(&common.App{"espresso", "1.0.6", "2017", "JNLP app launcher as an alternative to Java Webstart", "mpetavy", common.APACHE, "https://github.comn/mpetavy/golang/espresso", false, nil, nil, run, time.Duration(0)}, []string{"url"})
-	common.Run()
+	common.Run([]string{"url"})
 }
