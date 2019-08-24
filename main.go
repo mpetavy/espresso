@@ -630,7 +630,7 @@ func (c *ChannelError) Exists() bool {
 }
 
 func main() {
-	defer common.Cleanup()
+	defer common.Done()
 
 	common.Run([]string{"url"})
 }
