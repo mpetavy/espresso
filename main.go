@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"os/user"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -142,10 +143,12 @@ var (
 func init() {
 	common.Init("espresso", "1.0.6", "2017", "JNLP app launcher as an alternative to Java Webstart", "mpetavy", common.APACHE, "https://github.comn/mpetavy/golang/espresso", false, nil, nil, run, 0)
 
+	user, _ := user.Current()
+
 	address = flag.String("url", "", "URL to JNLP file")
 	jrepath = flag.String("jre", "", "Path to the java executable file")
 	arch = flag.String("arch", runtime.GOARCH, "Used architecture")
-	cache = flag.String("cache", fmt.Sprintf("%s%c%s", *common.UserHomeDir, os.PathSeparator, ".espresso"), "Cache path for permanent caching")
+	cache = flag.String("cache", fmt.Sprintf("%s%c%s", user.HomeDir, os.PathSeparator, ".espresso"), "Cache path for permanent caching")
 }
 
 // download loads a remote resource via http(s) and stores it to the given filename
