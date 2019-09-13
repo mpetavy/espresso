@@ -81,7 +81,7 @@ type Resource struct {
 	Os         string      `xml:"os,attr"`
 	Arch       string      `xml:"arch,attr"`
 	Jars       []Jar       `xml:"jar"`
-	Nativelib  []Jar       `xml:"nativelib"`
+	Nativelibs []Jar       `xml:"nativelib"`
 	Extensions []Extension `xml:"extension"`
 }
 
@@ -111,13 +111,6 @@ type Jar struct {
 	URL     *url.URL
 }
 
-// Nativelib element
-type Nativelib struct {
-	XMLName xml.Name
-	Href    string `xml:"href,attr"`
-	Path    string
-}
-
 // Extension element
 type Extension struct {
 	XMLName xml.Name
@@ -143,12 +136,12 @@ var (
 func init() {
 	common.Init("espresso", "1.0.6", "2017", "JNLP app launcher as an alternative to Java Webstart", "mpetavy", common.APACHE, "https://github.comn/mpetavy/golang/espresso", false, nil, nil, run, 0)
 
-	user, _ := user.Current()
+	usr, _ := user.Current()
 
 	address = flag.String("url", "", "URL to JNLP file")
 	jrepath = flag.String("jre", "", "Path to the java executable file")
 	arch = flag.String("arch", runtime.GOARCH, "Used architecture")
-	cache = flag.String("cache", fmt.Sprintf("%s%c%s", user.HomeDir, os.PathSeparator, ".espresso"), "Cache path for permanent caching")
+	cache = flag.String("cache", fmt.Sprintf("%s%c%s", usr.HomeDir, os.PathSeparator, ".espresso"), "Cache path for permanent caching")
 }
 
 // download loads a remote resource via http(s) and stores it to the given filename
@@ -169,7 +162,9 @@ func download(href string, filename string) error {
 		}
 
 		// care about the final close of the response body
-		defer response.Body.Close()
+		defer func() {
+			common.DebugError(response.Body.Close())
+		}()
 
 		contentLength, _ := strconv.ParseInt(response.Header.Get("Content-Length"), 10, 64)
 
@@ -193,7 +188,9 @@ func download(href string, filename string) error {
 		}
 
 		// care about final cleanup of reponse body
-		defer response.Body.Close()
+		defer func() {
+			common.DebugError(response.Body.Close())
+		}()
 
 		// create all parent directories for the given filename
 		err = os.MkdirAll(filepath.Dir(filename), os.ModePerm)
@@ -218,7 +215,9 @@ func runUnzip(filename string, path string) error {
 	}
 
 	// care about closing the ZIP file
-	defer r.Close()
+	defer func() {
+		common.DebugError(r.Close())
+	}()
 
 	// loop over the ZIP content
 	for _, f := range r.File {
@@ -247,7 +246,7 @@ func runUnzip(filename string, path string) error {
 		}
 
 		// closes the zipfile file
-		zipfile.Close()
+		common.DebugError(zipfile.Close())
 	}
 
 	return nil
@@ -264,7 +263,7 @@ func runSelfextract(filename string) error {
 }
 
 // runResource operates on the a single resource object and cares about download, runUnzip or extraction
-func runResource(wg *sync.WaitGroup, url string, path string, doUnzip bool, doExtract bool, channelError *ChannelError) {
+func runResource(wg *sync.WaitGroup, url string, path string, doUnzip bool, doExtract bool, channelError *common.ChannelError) {
 	defer wg.Done()
 
 	// first do the download ...
@@ -296,7 +295,7 @@ func runResource(wg *sync.WaitGroup, url string, path string, doUnzip bool, doEx
 	}
 }
 
-func runJnlp(address string, doHeader bool, channelError *ChannelError) *Jnlp {
+func runJnlp(address string, doHeader bool, channelError *common.ChannelError) *Jnlp {
 	// try to get the JNLP file
 	client := &http.Client{}
 
@@ -307,7 +306,9 @@ func runJnlp(address string, doHeader bool, channelError *ChannelError) *Jnlp {
 	}
 
 	// care about the final close of the response body
-	defer response.Body.Close()
+	defer func() {
+		common.DebugError(response.Body.Close())
+	}()
 
 	// load the JNLP file
 	content, err := ioutil.ReadAll(response.Body)
@@ -416,7 +417,7 @@ func runJnlp(address string, doHeader bool, channelError *ChannelError) *Jnlp {
 			}
 
 			// iterate over the defined nativelibs
-			for _, nativelib := range resource.Nativelib {
+			for _, nativelib := range resource.Nativelibs {
 
 				// inform the WaitGroup that a new resource action will be added
 				wg.Add(1)
@@ -542,7 +543,7 @@ func run() error {
 		}
 	}
 
-	var channelError ChannelError
+	var channelError common.ChannelError
 
 	jnlp := runJnlp(*address, true, &channelError)
 
@@ -597,39 +598,6 @@ func run() error {
 	err = cmd.Start()
 
 	return err
-}
-
-type ChannelError struct {
-	m sync.Mutex
-	l []error
-}
-
-func (c *ChannelError) Add(err error) {
-	c.m.Lock()
-	c.l = append(c.l, err)
-	c.m.Unlock()
-}
-
-func (c *ChannelError) Get() error {
-	c.m.Lock()
-	defer c.m.Unlock()
-
-	if len(c.l) > 0 {
-		return c.l[0]
-	} else {
-		return nil
-	}
-}
-
-func (c *ChannelError) GetAll() []error {
-	return c.l
-}
-
-func (c *ChannelError) Exists() bool {
-	c.m.Lock()
-	defer c.m.Unlock()
-
-	return len(c.l) > 0
 }
 
 func main() {
