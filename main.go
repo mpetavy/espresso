@@ -134,7 +134,7 @@ var (
 )
 
 func init() {
-	common.Init("espresso", "1.0.6", "2017", "JNLP app launcher as an alternative to Java Webstart", "mpetavy", common.APACHE, "https://github.comn/mpetavy/golang/espresso", false, nil, nil, run, 0)
+	common.Init("1.0.6", "2017", "JNLP app launcher as an alternative to Java Webstart", "mpetavy", common.APACHE, false, nil, nil, run, 0)
 
 	usr, _ := user.Current()
 
