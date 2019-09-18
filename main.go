@@ -193,7 +193,7 @@ func download(href string, filename string) error {
 		}()
 
 		// create all parent directories for the given filename
-		err = os.MkdirAll(filepath.Dir(filename), os.ModePerm)
+		err = os.MkdirAll(filepath.Dir(filename), common.DirFileMode)
 		if err != nil {
 			return err
 		}
@@ -224,7 +224,7 @@ func runUnzip(filename string, path string) error {
 		path := filepath.Join(path, f.Name)
 
 		// create the destination path
-		err := os.MkdirAll(filepath.Dir(path), os.ModeDir|os.ModePerm)
+		err := os.MkdirAll(filepath.Dir(path), common.DirFileMode)
 		if err != nil {
 			return err
 		}
@@ -518,7 +518,7 @@ func run() error {
 	}
 
 	if !b {
-		err := os.MkdirAll(*cache, os.ModePerm)
+		err := os.MkdirAll(*cache, common.DirFileMode)
 		if err != nil {
 			return err
 		}
