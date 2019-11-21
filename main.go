@@ -163,7 +163,7 @@ func download(href string, filename string) error {
 
 		// care about the final close of the response body
 		defer func() {
-			common.DebugError(response.Body.Close())
+			common.WarnError(response.Body.Close())
 		}()
 
 		contentLength, _ := strconv.ParseInt(response.Header.Get("Content-Length"), 10, 64)
@@ -189,7 +189,7 @@ func download(href string, filename string) error {
 
 		// care about final cleanup of reponse body
 		defer func() {
-			common.DebugError(response.Body.Close())
+			common.WarnError(response.Body.Close())
 		}()
 
 		// create all parent directories for the given filename
@@ -216,7 +216,7 @@ func runUnzip(filename string, path string) error {
 
 	// care about closing the ZIP file
 	defer func() {
-		common.DebugError(r.Close())
+		common.WarnError(r.Close())
 	}()
 
 	// loop over the ZIP content
@@ -246,7 +246,7 @@ func runUnzip(filename string, path string) error {
 		}
 
 		// closes the zipfile file
-		common.DebugError(zipfile.Close())
+		common.WarnError(zipfile.Close())
 	}
 
 	return nil
@@ -307,7 +307,7 @@ func runJnlp(address string, doHeader bool, channelError *common.ChannelError) *
 
 	// care about the final close of the response body
 	defer func() {
-		common.DebugError(response.Body.Close())
+		common.WarnError(response.Body.Close())
 	}()
 
 	// load the JNLP file
