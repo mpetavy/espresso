@@ -134,7 +134,7 @@ var (
 )
 
 func init() {
-	common.Init("1.0.6", "2017", "JNLP app launcher as an alternative to Java Webstart", "mpetavy", fmt.Sprintf("https://github.com/mpetavy/%s", common.Title()), common.APACHE, false, nil, nil, run, 0)
+	common.Init("1.0.6", "2017", "JNLP app launcher as an alternative to Java Webstart", "mpetavy", fmt.Sprintf("https://github.com/mpetavy/%s", common.Title()), common.APACHE, nil, nil, run, 0)
 
 	usr, _ := user.Current()
 
