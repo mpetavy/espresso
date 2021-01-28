@@ -146,14 +146,9 @@ func init() {
 
 // download loads a remote resource via http(s) and stores it to the given filename
 func download(href string, filename string) error {
-	b, err := common.FileExists(filename)
-	if err != nil {
-		return nil
-	}
-
 	var mustDownload = true
 
-	if b {
+	if common.FileExists(filename) {
 		client := &http.Client{}
 
 		response, err := client.Head(href)
@@ -512,12 +507,7 @@ func run() error {
 	}
 
 	// check if the catch path exists
-	b, err := common.FileExists(*cache)
-	if err != nil {
-		return err
-	}
-
-	if !b {
+	if !common.FileExists(*cache) {
 		err := os.MkdirAll(*cache, common.DefaultDirMode)
 		if err != nil {
 			return err
@@ -595,9 +585,12 @@ func run() error {
 	cmd := exec.Command(*jrepath, cmds...)
 
 	// execute the app cmd
-	err = cmd.Start()
+	err := cmd.Start()
+	if common.Error(err) {
+		return err
+	}
 
-	return err
+	return nil
 }
 
 func main() {
