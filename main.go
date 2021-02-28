@@ -7,7 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/mpetavy/common"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -306,7 +306,7 @@ func runJnlp(address string, doHeader bool, channelError *common.ChannelError) *
 	}()
 
 	// load the JNLP file
-	content, err := ioutil.ReadAll(response.Body)
+	content, err := io.ReadAll(response.Body)
 	if err != nil {
 		channelError.Add(err)
 		return nil
