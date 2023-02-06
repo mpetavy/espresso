@@ -134,7 +134,7 @@ var (
 )
 
 func init() {
-	common.Init(false, "1.0.6", "", "", "2017", "JNLP app launcher as an alternative to Java Webstart", "mpetavy", fmt.Sprintf("https://github.com/mpetavy/%s", common.Title()), common.APACHE, nil, nil, nil, run, 0)
+	common.Init("1.0.6", "", "", "2017", "JNLP app launcher as an alternative to Java Webstart", "mpetavy", fmt.Sprintf("https://github.com/mpetavy/%s", common.Title()), common.APACHE, nil, nil, nil, run, 0)
 
 	usr, _ := user.Current()
 
@@ -361,7 +361,7 @@ func runJnlp(address string, doHeader bool, channelError *common.ChannelError) *
 	for _, resource := range jnlp.Resources {
 
 		if len(resource.Arch) > 0 {
-			resource.Arch = strings.Title(resource.Arch)
+			resource.Arch = common.Capitalize(resource.Arch)
 		}
 
 		if len(resource.Os) > 0 {
