@@ -290,6 +290,10 @@ func runResource(wg *sync.WaitGroup, url string, path string, doUnzip bool, doEx
 	}
 }
 
+func CompareIgnoreCase(s0 string, s1 string) bool {
+	return strings.ToLower(s0) == strings.ToLower(s1)
+}
+
 func runJnlp(address string, doHeader bool, channelError *common.ChannelError) *Jnlp {
 	// try to get the JNLP file
 	client := &http.Client{}
@@ -369,7 +373,7 @@ func runJnlp(address string, doHeader bool, channelError *common.ChannelError) *
 		}
 
 		// is the resouce relevant for the current architecture and OS?
-		if (len(resource.Arch) == 0 || common.CompareIgnoreCase(resource.Arch, *arch)) && (len(resource.Os) == 0 || common.CompareIgnoreCase(resource.Os, operatingsystem)) {
+		if (len(resource.Arch) == 0 || CompareIgnoreCase(resource.Arch, *arch)) && (len(resource.Os) == 0 || CompareIgnoreCase(resource.Os, operatingsystem)) {
 
 			// iterate over the resource JARS
 			for _, jar := range resource.Jars {
@@ -456,7 +460,7 @@ func runJnlp(address string, doHeader bool, channelError *common.ChannelError) *
 	for _, jre := range jnlp.PrivateJres {
 
 		// is the private JRE relevant for the current architecture and OS?
-		if (len(jre.Arch) == 0 || common.CompareIgnoreCase(jre.Arch, *arch)) && (len(jre.Os) == 0 || common.CompareIgnoreCase(jre.Os, operatingsystem)) {
+		if (len(jre.Arch) == 0 || CompareIgnoreCase(jre.Arch, *arch)) && (len(jre.Os) == 0 || CompareIgnoreCase(jre.Os, operatingsystem)) {
 
 			// inform the WaitGroup that a new resource action will be added
 			wg.Add(1)
