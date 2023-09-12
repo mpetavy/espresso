@@ -258,13 +258,13 @@ func runSelfextract(filename string) error {
 }
 
 // runResource operates on the a single resource object and cares about download, runUnzip or extraction
-func runResource(wg *sync.WaitGroup, url string, path string, doUnzip bool, doExtract bool, channelError *common.ChannelError) {
+func runResource(wg *sync.WaitGroup, url string, path string, doUnzip bool, doExtract bool, channelError *common.Sync[error]) {
 	defer wg.Done()
 
 	// first do the download ...
 	err := download(url, path)
 	if err != nil {
-		channelError.Add(err)
+		channelError.Set(err)
 		return
 	}
 
@@ -275,7 +275,7 @@ func runResource(wg *sync.WaitGroup, url string, path string, doUnzip bool, doEx
 	if doUnzip {
 		err = runUnzip(path, filepath.Dir(path))
 		if err != nil {
-			channelError.Add(err)
+			channelError.Set(err)
 			return
 		}
 	}
@@ -284,7 +284,7 @@ func runResource(wg *sync.WaitGroup, url string, path string, doUnzip bool, doEx
 	if doExtract {
 		err := runSelfextract(path)
 		if err != nil {
-			channelError.Add(err)
+			channelError.Set(err)
 			return
 		}
 	}
@@ -294,13 +294,13 @@ func CompareIgnoreCase(s0 string, s1 string) bool {
 	return strings.ToLower(s0) == strings.ToLower(s1)
 }
 
-func runJnlp(address string, doHeader bool, channelError *common.ChannelError) *Jnlp {
+func runJnlp(address string, doHeader bool, channelError *common.Sync[error]) *Jnlp {
 	// try to get the JNLP file
 	client := &http.Client{}
 
 	response, err := client.Get(address)
 	if err != nil {
-		channelError.Add(err)
+		channelError.Set(err)
 		return nil
 	}
 
@@ -312,7 +312,7 @@ func runJnlp(address string, doHeader bool, channelError *common.ChannelError) *
 	// load the JNLP file
 	content, err := io.ReadAll(response.Body)
 	if err != nil {
-		channelError.Add(err)
+		channelError.Set(err)
 		return nil
 	}
 
@@ -330,7 +330,7 @@ func runJnlp(address string, doHeader bool, channelError *common.ChannelError) *
 	// parse the JNLP u
 	u, err := url.Parse(address)
 	if err != nil {
-		channelError.Add(err)
+		channelError.Set(err)
 		return nil
 	}
 
@@ -351,7 +351,7 @@ func runJnlp(address string, doHeader bool, channelError *common.ChannelError) *
 	// decode the content of the JNLP content
 	err = decoder.Decode(&jnlp)
 	if err != nil {
-		channelError.Add(err)
+		channelError.Set(err)
 		return nil
 	}
 
@@ -385,7 +385,7 @@ func runJnlp(address string, doHeader bool, channelError *common.ChannelError) *
 				jar.Path = filepath.Join(appPath, jar.Href)
 				jar.URL, err = u.Parse(codebase + "/" + jar.Href)
 				if err != nil {
-					channelError.Add(err)
+					channelError.Set(err)
 					return nil
 				}
 
@@ -408,7 +408,7 @@ func runJnlp(address string, doHeader bool, channelError *common.ChannelError) *
 				extension.Path = filepath.Join(appPath, extension.Href)
 				extension.URL, err = u.Parse(codebase + "/" + extension.Href)
 				if err != nil {
-					channelError.Add(err)
+					channelError.Set(err)
 					return nil
 				}
 
@@ -425,7 +425,7 @@ func runJnlp(address string, doHeader bool, channelError *common.ChannelError) *
 				nativelib.Path = filepath.Join(appPath, nativelib.Href)
 				nativelib.URL, err = u.Parse(codebase + "/" + nativelib.Href)
 				if err != nil {
-					channelError.Add(err)
+					channelError.Set(err)
 					return nil
 				}
 
@@ -480,7 +480,7 @@ func runJnlp(address string, doHeader bool, channelError *common.ChannelError) *
 			jre.Path = filepath.Join(jnlpPath, jre.Arch, filename)
 			jre.URL, err = u.Parse(codebase + "/" + jre.Href)
 			if err != nil {
-				channelError.Add(err)
+				channelError.Set(err)
 				return nil
 			}
 
@@ -530,21 +530,21 @@ func run() error {
 
 	if len(*jrepath) == 0 {
 		// if not private JRE is provided then do the fallback to default JAVAW executable
-		if common.IsWindowsOS() {
+		if common.IsWindows() {
 			*jrepath = "javaw"
 		} else {
 			*jrepath = "java"
 		}
 	}
 
-	var channelError common.ChannelError
+	var channelError common.Sync[error]
 
 	jnlp := runJnlp(*address, true, &channelError)
 
 	// wait on all registered WaitGroup objects
 	wg.Wait()
 
-	if channelError.Exists() {
+	if channelError.IsSet() {
 		return channelError.Get()
 	}
 
