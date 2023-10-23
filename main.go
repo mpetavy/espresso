@@ -131,6 +131,7 @@ var (
 	maxheapsize     string
 	wg              sync.WaitGroup
 	mutex           = &sync.Mutex{}
+	channelError    = common.NewSync(new(error))
 )
 
 func init() {
@@ -258,13 +259,13 @@ func runSelfextract(filename string) error {
 }
 
 // runResource operates on the a single resource object and cares about download, runUnzip or extraction
-func runResource(wg *sync.WaitGroup, url string, path string, doUnzip bool, doExtract bool, channelError *common.Sync[error]) {
+func runResource(wg *sync.WaitGroup, url string, path string, doUnzip bool, doExtract bool) {
 	defer wg.Done()
 
 	// first do the download ...
 	err := download(url, path)
 	if err != nil {
-		channelError.Set(err)
+		channelError.Set(&err)
 		return
 	}
 
@@ -275,7 +276,7 @@ func runResource(wg *sync.WaitGroup, url string, path string, doUnzip bool, doEx
 	if doUnzip {
 		err = runUnzip(path, filepath.Dir(path))
 		if err != nil {
-			channelError.Set(err)
+			channelError.Set(&err)
 			return
 		}
 	}
@@ -284,7 +285,7 @@ func runResource(wg *sync.WaitGroup, url string, path string, doUnzip bool, doEx
 	if doExtract {
 		err := runSelfextract(path)
 		if err != nil {
-			channelError.Set(err)
+			channelError.Set(&err)
 			return
 		}
 	}
@@ -294,13 +295,13 @@ func CompareIgnoreCase(s0 string, s1 string) bool {
 	return strings.ToLower(s0) == strings.ToLower(s1)
 }
 
-func runJnlp(address string, doHeader bool, channelError *common.Sync[error]) *Jnlp {
+func runJnlp(address string, doHeader bool) *Jnlp {
 	// try to get the JNLP file
 	client := &http.Client{}
 
 	response, err := client.Get(address)
 	if err != nil {
-		channelError.Set(err)
+		channelError.Set(&err)
 		return nil
 	}
 
@@ -312,7 +313,7 @@ func runJnlp(address string, doHeader bool, channelError *common.Sync[error]) *J
 	// load the JNLP file
 	content, err := io.ReadAll(response.Body)
 	if err != nil {
-		channelError.Set(err)
+		channelError.Set(&err)
 		return nil
 	}
 
@@ -330,7 +331,7 @@ func runJnlp(address string, doHeader bool, channelError *common.Sync[error]) *J
 	// parse the JNLP u
 	u, err := url.Parse(address)
 	if err != nil {
-		channelError.Set(err)
+		channelError.Set(&err)
 		return nil
 	}
 
@@ -351,7 +352,7 @@ func runJnlp(address string, doHeader bool, channelError *common.Sync[error]) *J
 	// decode the content of the JNLP content
 	err = decoder.Decode(&jnlp)
 	if err != nil {
-		channelError.Set(err)
+		channelError.Set(&err)
 		return nil
 	}
 
@@ -385,7 +386,7 @@ func runJnlp(address string, doHeader bool, channelError *common.Sync[error]) *J
 				jar.Path = filepath.Join(appPath, jar.Href)
 				jar.URL, err = u.Parse(codebase + "/" + jar.Href)
 				if err != nil {
-					channelError.Set(err)
+					channelError.Set(&err)
 					return nil
 				}
 
@@ -395,7 +396,7 @@ func runJnlp(address string, doHeader bool, channelError *common.Sync[error]) *J
 				mutex.Unlock()
 
 				// runResource the resource asynch
-				go runResource(&wg, jar.URL.String(), jar.Path, false, false, channelError)
+				go runResource(&wg, jar.URL.String(), jar.Path, false, false)
 			}
 
 			// iterate over the resource EXTENSIONS
@@ -408,11 +409,11 @@ func runJnlp(address string, doHeader bool, channelError *common.Sync[error]) *J
 				extension.Path = filepath.Join(appPath, extension.Href)
 				extension.URL, err = u.Parse(codebase + "/" + extension.Href)
 				if err != nil {
-					channelError.Set(err)
+					channelError.Set(&err)
 					return nil
 				}
 
-				go runJnlp(extension.URL.String(), false, channelError)
+				go runJnlp(extension.URL.String(), false)
 			}
 
 			// iterate over the defined nativelibs
@@ -425,7 +426,7 @@ func runJnlp(address string, doHeader bool, channelError *common.Sync[error]) *J
 				nativelib.Path = filepath.Join(appPath, nativelib.Href)
 				nativelib.URL, err = u.Parse(codebase + "/" + nativelib.Href)
 				if err != nil {
-					channelError.Set(err)
+					channelError.Set(&err)
 					return nil
 				}
 
@@ -435,7 +436,7 @@ func runJnlp(address string, doHeader bool, channelError *common.Sync[error]) *J
 				mutex.Unlock()
 
 				// runResource the resource asynch
-				go runResource(&wg, nativelib.URL.String(), nativelib.Path, true, false, channelError)
+				go runResource(&wg, nativelib.URL.String(), nativelib.Path, true, false)
 			}
 
 			if doHeader {
@@ -480,7 +481,7 @@ func runJnlp(address string, doHeader bool, channelError *common.Sync[error]) *J
 			jre.Path = filepath.Join(jnlpPath, jre.Arch, filename)
 			jre.URL, err = u.Parse(codebase + "/" + jre.Href)
 			if err != nil {
-				channelError.Set(err)
+				channelError.Set(&err)
 				return nil
 			}
 
@@ -492,7 +493,7 @@ func runJnlp(address string, doHeader bool, channelError *common.Sync[error]) *J
 			}
 
 			// runResource the resource asynch
-			runResource(&wg, jre.URL.String(), jre.Path, false, true, channelError)
+			runResource(&wg, jre.URL.String(), jre.Path, false, true)
 		}
 	}
 
@@ -537,15 +538,15 @@ func run() error {
 		}
 	}
 
-	var channelError common.Sync[error]
+	channelError = common.NewSync(new(error))
 
-	jnlp := runJnlp(*address, true, &channelError)
+	jnlp := runJnlp(*address, true)
 
 	// wait on all registered WaitGroup objects
 	wg.Wait()
 
 	if channelError.IsSet() {
-		return channelError.Get()
+		return *channelError.Get()
 	}
 
 	// cmd line parameters
