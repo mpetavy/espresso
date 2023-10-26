@@ -131,7 +131,7 @@ var (
 	maxheapsize     string
 	wg              sync.WaitGroup
 	mutex           = &sync.Mutex{}
-	channelError    = common.NewSync(new(error))
+	channelError    = common.NewSync[error]()
 )
 
 func init() {
@@ -265,7 +265,7 @@ func runResource(wg *sync.WaitGroup, url string, path string, doUnzip bool, doEx
 	// first do the download ...
 	err := download(url, path)
 	if err != nil {
-		channelError.Set(&err)
+		channelError.Set(err)
 		return
 	}
 
@@ -276,7 +276,7 @@ func runResource(wg *sync.WaitGroup, url string, path string, doUnzip bool, doEx
 	if doUnzip {
 		err = runUnzip(path, filepath.Dir(path))
 		if err != nil {
-			channelError.Set(&err)
+			channelError.Set(err)
 			return
 		}
 	}
@@ -285,7 +285,7 @@ func runResource(wg *sync.WaitGroup, url string, path string, doUnzip bool, doEx
 	if doExtract {
 		err := runSelfextract(path)
 		if err != nil {
-			channelError.Set(&err)
+			channelError.Set(err)
 			return
 		}
 	}
@@ -301,7 +301,7 @@ func runJnlp(address string, doHeader bool) *Jnlp {
 
 	response, err := client.Get(address)
 	if err != nil {
-		channelError.Set(&err)
+		channelError.Set(err)
 		return nil
 	}
 
@@ -313,7 +313,7 @@ func runJnlp(address string, doHeader bool) *Jnlp {
 	// load the JNLP file
 	content, err := io.ReadAll(response.Body)
 	if err != nil {
-		channelError.Set(&err)
+		channelError.Set(err)
 		return nil
 	}
 
@@ -331,7 +331,7 @@ func runJnlp(address string, doHeader bool) *Jnlp {
 	// parse the JNLP u
 	u, err := url.Parse(address)
 	if err != nil {
-		channelError.Set(&err)
+		channelError.Set(err)
 		return nil
 	}
 
@@ -352,7 +352,7 @@ func runJnlp(address string, doHeader bool) *Jnlp {
 	// decode the content of the JNLP content
 	err = decoder.Decode(&jnlp)
 	if err != nil {
-		channelError.Set(&err)
+		channelError.Set(err)
 		return nil
 	}
 
@@ -386,7 +386,7 @@ func runJnlp(address string, doHeader bool) *Jnlp {
 				jar.Path = filepath.Join(appPath, jar.Href)
 				jar.URL, err = u.Parse(codebase + "/" + jar.Href)
 				if err != nil {
-					channelError.Set(&err)
+					channelError.Set(err)
 					return nil
 				}
 
@@ -409,7 +409,7 @@ func runJnlp(address string, doHeader bool) *Jnlp {
 				extension.Path = filepath.Join(appPath, extension.Href)
 				extension.URL, err = u.Parse(codebase + "/" + extension.Href)
 				if err != nil {
-					channelError.Set(&err)
+					channelError.Set(err)
 					return nil
 				}
 
@@ -426,7 +426,7 @@ func runJnlp(address string, doHeader bool) *Jnlp {
 				nativelib.Path = filepath.Join(appPath, nativelib.Href)
 				nativelib.URL, err = u.Parse(codebase + "/" + nativelib.Href)
 				if err != nil {
-					channelError.Set(&err)
+					channelError.Set(err)
 					return nil
 				}
 
@@ -481,7 +481,7 @@ func runJnlp(address string, doHeader bool) *Jnlp {
 			jre.Path = filepath.Join(jnlpPath, jre.Arch, filename)
 			jre.URL, err = u.Parse(codebase + "/" + jre.Href)
 			if err != nil {
-				channelError.Set(&err)
+				channelError.Set(err)
 				return nil
 			}
 
@@ -538,7 +538,7 @@ func run() error {
 		}
 	}
 
-	channelError = common.NewSync(new(error))
+	channelError = common.NewSync[error]()
 
 	jnlp := runJnlp(*address, true)
 
@@ -546,7 +546,7 @@ func run() error {
 	wg.Wait()
 
 	if channelError.IsSet() {
-		return *channelError.Get()
+		return channelError.Get()
 	}
 
 	// cmd line parameters
