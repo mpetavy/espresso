@@ -3,6 +3,7 @@ package main
 import (
 	"archive/zip"
 	"bytes"
+	"embed"
 	"encoding/xml"
 	"flag"
 	"fmt"
@@ -134,8 +135,11 @@ var (
 	channelError    = common.NewSync[error]()
 )
 
+//go:embed go.mod
+var resources embed.FS
+
 func init() {
-	common.Init("espresso", "", "", "", "2017", "JNLP app launcher as an alternative to Java Webstart", "mpetavy", fmt.Sprintf("https://github.com/mpetavy/%s", common.Title()), common.APACHE, nil, nil, nil, run, 0)
+	common.Init("", "", "", "", "JNLP app launcher as an alternative to Java Webstart", "", "", "", &resources, nil, nil, run, 0)
 
 	usr, _ := user.Current()
 
