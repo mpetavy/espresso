@@ -347,7 +347,7 @@ func runJnlp(address string, doHeader bool) *Jnlp {
 	// create empty jnlp object
 	jnlp := Jnlp{}
 
-	content, err = common.ToUTF8(bytes.NewReader(content), common.ISO_8859_1)
+	content, err = common.ToUTF8(content, common.ISO_8859_1)
 
 	// decode ISO8859 encoded JNLP file
 	reader := bytes.NewReader(content)
